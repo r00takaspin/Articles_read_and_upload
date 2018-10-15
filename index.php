@@ -2,7 +2,8 @@
 header('Content-Type: text/html; charset=utf-8'); // ; charset=windows-1251
 error_reporting(E_ALL);
 define('ROOT_DIR',dirname(__FILE__));
-define('ARTICLE_DIR', './articles/');
+define('ARTICLE_DIR', '/articles/');
+define('PER_PAGE', 10);
 ?>
 <!DOCTYPE html>
 <html lang="ru">
@@ -16,6 +17,7 @@ define('ARTICLE_DIR', './articles/');
 	 3. Не выводить ее в поле с текстом
 -->
 <?php
+	// перенеси это в отдельный файл show.php
 	if (isset($_GET['show'])) {
 	?>
 		<h1>Название статьи из первой строки</h1>
@@ -43,21 +45,44 @@ define('ARTICLE_DIR', './articles/');
 	
 		<ul>
 			<?php 
-			if ($handle = opendir(ROOT_DIR.ARTICLE_DIR)) {
+			$page = intval(@$_GET['page']) || 0;
+			$entries = array();
+			$titles = array();
+
+			if ($handle = opendir(ROOT_DIR . ARTICLE_DIR)) {
+				// получаем названия статей и названия файлов 
+
 				while (false !==($entry = readdir($handle))) {
 					if ($entry !='.' and $entry != '..') {
-						echo '<li><a href="index.php?show='.$entry.'">'.$entry.'</a></li>'.'<br>';
+						$entries[] = $entry;
+
+						// читаем заголовок из файла
+						$file = fopen(ROOT_DIR . ARTICLE_DIR . $entry, 'r');
+						$title = fgets($file);
+						fclose($file);
+						$titles[] = $title;
 					}
 				}
 			}
 
-			$dir = opendir(ARTICLE_DIR);
-			$count = 0;
-			while($file = readdir($dir)){
-				if($file == '.' || $file == '..' || is_dir(ARTICLE_DIR. $file)){ // точки и папки не считаем
-				continue;}
-				$count++;}
-			echo 'Всего статей: ' . $count;}
+			$entries = array_slice($entries, PER_PAGE * $page);
+
+			foreach($entries as $t => $e) { 
+				echo '<li><a href="index.php?show='.$entry.'">'.$titles[$t].'</a></li>'.'<br>';
+			}
+
+
+			// постраничка
+			for($i=0; $i<count($entries) / PER_PAGE; $i++) { 
+				?>
+					<a href="index.php?page=<?=$i?>"><?=$i+1?></a>
+				<?
+			}
+
+			?><BR><?
+
+			echo 'Всего статей: ' . count($entries);
+}
 			?>
 
 		</ul>
